@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loan & Amortization Calculator</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            },
+            accent: {
+              500: '#3b82f6',
+              600: '#2563eb',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for table */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans antialiased">
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-white">Smart Loan & Amortization Calculator</h1>
+          <p class="text-xs text-slate-400">Interactive principal, prepayment, & interest savings analyzer</p>
+        </div>
+      </div>
+      <button id="exportCsvBtn" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-sm font-medium transition shadow-sm">
+        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+        </svg>
+        Export Amortization (CSV)
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Top Section: Controls + Summary Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Input Controls Sidebar -->
+      <section class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+            </svg>
+            Loan Parameters
+          </h2>
+          <button id="resetDefaultsBtn" class="text-xs text-slate-400 hover:text-emerald-400 transition underline">Reset Defaults</button>
+        </div>
+
+        <!-- Inputs Form -->
+        <div class="space-y-4">
+          <!-- Loan Amount -->
+          <div>
+            <div class="flex justify-between items-center text-sm font-medium mb-1">
+              <label for="principalInput" class="text-slate-300">Loan Amount / Principal ($)</label>
+              <span id="principalVal" class="text-emerald-400 font-semibold">$166,000</span>
+            </div>
+            <input type="number" id="principalInput" value="166000" step="1000" min="1000" max="2000000" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm" />
+          </div>
+
+          <!-- Interest Rate -->
+          <div>
+            <div class="flex justify-between items-center text-sm font-medium mb-1">
+              <label for="rateInput" class="text-slate-300">Annual Interest Rate (%)</label>
+              <span id="rateVal" class="text-emerald-400 font-semibold">7.5%</span>
+            </div>
+            <input type="number" id="rateInput" value="7.5" step="0.05" min="0.1" max="25" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm" />
+          </div>
+
+          <!-- Base Loan Term -->
+          <div>
+            <div class="flex justify-between items-center text-sm font-medium mb-1">
+              <label for="termInput" class="text-slate-300">Base Loan Term (Years)</label>
+              <span id="termVal" class="text-emerald-400 font-semibold">30 Years</span>
+            </div>
+            <select id="termInput" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+              <option value="10">10 Years</option>
+              <option value="15">15 Years</option>
+              <option value="20">20 Years</option>
+              <option value="25">25 Years</option>
+              <option value="30" selected>30 Years</option>
+            </select>
+          </div>
+
+          <hr class="border-slate-800 my-4" />
+
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Accelerated Prepayment Options</div>
+
+          <!-- Extra Monthly Prepayment -->
+          <div>
+            <div class="flex justify-between items-center text-sm font-medium mb-1">
+              <label for="extraMonthlyInput" class="text-slate-300">Extra Monthly Prepayment ($)</label>
+              <span class="text-xs text-slate-500">Targeting ~15yr EMI ($378.14)</span>
+            </div>
+            <input type="number" id="extraMonthlyInput" value="378.14" step="10" min="0" max="50000" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm" />
+          </div>
+
+          <!-- Extra Annual Prepayment -->
+          <div>
+            <div class="flex justify-between items-center text-sm font-medium mb-1">
+              <label for="extraAnnualInput" class="text-slate-300">Annual Prepayment ($)</label>
+              <span class="text-xs text-slate-500">Paid once per year</span>
+            </div>
+            <input type="number" id="extraAnnualInput" value="0" step="100" min="0" max="100000" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm" />
+          </div>
+
+          <!-- One-time Lump Sum Prepayment -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="lumpSumInput" class="block text-xs font-medium text-slate-300 mb-1">Lump Sum ($)</label>
+              <input type="number" id="lumpSumInput" value="0" step="500" min="0" max="500000" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm" />
+            </div>
+            <div>
+              <label for="lumpSumYearInput" class="block text-xs font-medium text-slate-300 mb-1">In Year #</label>
+              <input type="number" id="lumpSumYearInput" value="1" step="1" min="1" max="30" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Strategy Comparison & Dashboard Cards -->
+      <section class="lg:col-span-7 flex flex-col justify-between space-y-6">
+        
+        <!-- Top Metrics Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          
+          <!-- Standard Monthly EMI Card -->
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-md">
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Standard Base EMI</p>
+            <p id="cardBaseEmi" class="text-2xl font-bold text-white mt-1">$1,160.70</p>
+            <p class="text-xs text-slate-500 mt-1">Required monthly payment</p>
+          </div>
+
+          <!-- Actual Total Monthly Payment -->
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-md border-l-4 border-l-blue-500">
+            <p class="text-xs font-medium text-blue-400 uppercase tracking-wider">Total Monthly Payment</p>
+            <p id="cardTotalMonthly" class="text-2xl font-bold text-white mt-1">$1,538.84</p>
+            <p id="cardMonthlyExtraAdd" class="text-xs text-slate-400 mt-1">Base + $378.14 extra</p>
+          </div>
+
+          <!-- Payoff Timeline Comparison -->
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-md border-l-4 border-l-emerald-500">
+            <p class="text-xs font-medium text-emerald-400 uppercase tracking-wider">Accelerated Payoff Time</p>
+            <p id="cardPayoffTime" class="text-2xl font-bold text-emerald-400 mt-1">15 Years 0 Months</p>
+            <p id="cardTimeSaved" class="text-xs text-emerald-300 font-medium mt-1">Shortened by 15 Years (180 months)!</p>
+          </div>
+
+          <!-- Total Interest Paid -->
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-md">
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Interest Paid</p>
+            <p id="cardTotalInterest" class="text-2xl font-bold text-white mt-1">$110,991.29</p>
+            <p id="cardStandardInterest" class="text-xs text-slate-500 mt-1">vs. $251,850.59 standard</p>
+          </div>
+        </div>
+
+        <!-- Total Savings Banner -->
+        <div class="bg-gradient-to-r from-emerald-950/80 via-slate-900 to-blue-950/80 border border-emerald-500/30 p-6 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="space-y-1 text-center sm:text-left">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mb-1">
+              ✨ Prepayment Impact
+            </div>
+            <h3 class="text-lg font-bold text-white">Total Interest Savings</h3>
+            <p class="text-sm text-slate-300">By prepaying extra principal, you slash overall interest overhead.</p>
+          </div>
+          <div class="text-center sm:text-right">
+            <p id="cardInterestSavings" class="text-3xl sm:text-4xl font-extrabold text-emerald-400">$140,859.30</p>
+            <p class="text-xs text-emerald-300/80 mt-0.5">Direct interest saved</p>
+          </div>
+        </div>
+
+        <!-- Quick Summary Key Takeaway -->
+        <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl text-xs text-slate-400 leading-relaxed flex items-start gap-3">
+          <svg class="w-5 h-5 text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <p id="takeawayText">
+            Paying an extra <strong>$378.14/mo</strong> allows you to retire your 30-year <strong>$166,000</strong> loan in exactly <strong>15 years</strong>, keeping your mandatory commitment low while saving <strong>$140,859.30</strong> in interest!
+          </p>
+        </div>
+
+      </section>
+    </div>
+
+    <!-- Middle Section: Chart.js Line Chart -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-white">Amortization Balance Drawdown</h2>
+          <p class="text-xs text-slate-400">Comparison of remaining loan principal over time</p>
+        </div>
+        <div class="flex items-center gap-4 text-xs font-medium">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
+            <span class="text-slate-300">Standard Schedule</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span>
+            <span class="text-slate-300">Accelerated Prepayments</span>
+          </div>
+        </div>
+      </div>
+      <div class="relative w-full h-80">
+        <canvas id="balanceChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Bottom Section: Amortization Schedule Tables (Annual vs Monthly Toggle) -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-white">Amortization Breakdown Schedule</h2>
+          <p class="text-xs text-slate-400">Yearly summary and month-by-month principal and interest analysis</p>
+        </div>
+        <!-- View Toggle -->
+        <div class="inline-flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button id="viewAnnualBtn" class="px-4 py-1.5 rounded-lg text-xs font-medium transition text-white bg-slate-800 shadow">Annual Breakdown</button>
+          <button id="viewMonthlyBtn" class="px-4 py-1.5 rounded-lg text-xs font-medium transition text-slate-400 hover:text-white">Monthly Breakdown</button>
+        </div>
+      </div>
+
+      <!-- Annual View Table -->
+      <div id="annualTableContainer" class="overflow-x-auto rounded-xl border border-slate-800">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+            <tr>
+              <th class="py-3 px-4">Year</th>
+              <th class="py-3 px-4">Start Balance</th>
+              <th class="py-3 px-4">Principal Paid</th>
+              <th class="py-3 px-4 text-emerald-400">Interest Paid</th>
+              <th class="py-3 px-4">Extra Prepayments</th>
+              <th class="py-3 px-4">Total Paid (Year)</th>
+              <th class="py-3 px-4">End Balance</th>
+            </tr>
+          </thead>
+          <tbody id="annualTableBody" class="divide-y divide-slate-800/60 font-mono">
+            <!-- Dynamic Annual Rows Insertion -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Monthly View Table (Paginated / Scrollable) -->
+      <div id="monthlyTableContainer" class="hidden space-y-4">
+        <div class="overflow-x-auto rounded-xl border border-slate-800 max-h-[500px]">
+          <table class="w-full text-left text-xs text-slate-300 relative">
+            <thead class="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800 sticky top-0 z-10">
+              <tr>
+                <th class="py-3 px-4">Month #</th>
+                <th class="py-3 px-4">Start Balance</th>
+                <th class="py-3 px-4">Base Payment</th>
+                <th class="py-3 px-4 text-emerald-400">Extra Paid</th>
+                <th class="py-3 px-4 text-amber-400">Interest Portion</th>
+                <th class="py-3 px-4 text-blue-400">Principal Portion</th>
+                <th class="py-3 px-4">End Balance</th>
+              </tr>
+            </thead>
+            <tbody id="monthlyTableBody" class="divide-y divide-slate-800/60 font-mono">
+              <!-- Dynamic Monthly Rows Insertion -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-800 bg-slate-950 py-6 text-center text-xs text-slate-500">
+    <p>Financial Amortization Tool • Compounded Monthly Standard Loan Engine</p>
+  </footer>
+
+  <script>
+    // State Variables
+    let balanceChart = null;
+    let currentScheduleData = null;
+    let currentActiveView = 'annual'; // 'annual' or 'monthly'
+
+    // DOM Elements
+    const principalInput = document.getElementById('principalInput');
+    const rateInput = document.getElementById('rateInput');
+    const termInput = document.getElementById('termInput');
+    const extraMonthlyInput = document.getElementById('extraMonthlyInput');
+    const extraAnnualInput = document.getElementById('extraAnnualInput');
+    const lumpSumInput = document.getElementById('lumpSumInput');
+    const lumpSumYearInput = document.getElementById('lumpSumYearInput');
+    const resetDefaultsBtn = document.getElementById('resetDefaultsBtn');
+
+    // Display Labels
+    const principalVal = document.getElementById('principalVal');
+    const rateVal = document.getElementById('rateVal');
+    const termVal = document.getElementById('termVal');
+
+    // Cards
+    const cardBaseEmi = document.getElementById('cardBaseEmi');
+    const cardTotalMonthly = document.getElementById('cardTotalMonthly');
+    const cardMonthlyExtraAdd = document.getElementById('cardMonthlyExtraAdd');
+    const cardPayoffTime = document.getElementById('cardPayoffTime');
+    const cardTimeSaved = document.getElementById('cardTimeSaved');
+    const cardTotalInterest = document.getElementById('cardTotalInterest');
+    const cardStandardInterest = document.getElementById('cardStandardInterest');
+    const cardInterestSavings = document.getElementById('cardInterestSavings');
+    const takeawayText = document.getElementById('takeawayText');
+
+    // Views & Buttons
+    const viewAnnualBtn = document.getElementById('viewAnnualBtn');
+    const viewMonthlyBtn = document.getElementById('viewMonthlyBtn');
+    const annualTableContainer = document.getElementById('annualTableContainer');
+    const monthlyTableContainer = document.getElementById('monthlyTableContainer');
+    const annualTableBody = document.getElementById('annualTableBody');
+    const monthlyTableBody = document.getElementById('monthlyTableBody');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+
+    // Formatters
+    const fmtCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(num);
+    const fmtCurrencyWhole = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
+
+    // Calculate Amortization Schedules
+    function calculateAmortization() {
+      const P = parseFloat(principalInput.value) || 0;
+      const annualRate = parseFloat(rateInput.value) || 0;
+      const years = parseInt(termInput.value) || 30;
+      const extraMonthly = parseFloat(extraMonthlyInput.value) || 0;
+      const extraAnnual = parseFloat(extraAnnualInput.value) || 0;
+      const lumpSum = parseFloat(lumpSumInput.value) || 0;
+      const lumpSumYear = parseInt(lumpSumYearInput.value) || 1;
+
+      const monthlyRate = annualRate / 100 / 12;
+      const totalMonths = years * 12;
+
+      // Base Standard Monthly Payment (EMI)
+      let baseEMI = 0;
+      if (monthlyRate > 0) {
+        baseEMI = P * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
+      } else {
+        baseEMI = P / totalMonths;
+      }
+
+      // 1. Simulate Standard Schedule
+      let stdBalance = P;
+      let stdTotalInterest = 0;
+      const stdAnnualBalances = [P];
+
+      for (let m = 1; m <= totalMonths; m++) {
+        const interest = stdBalance * monthlyRate;
+        const principal = Math.min(stdBalance, baseEMI - interest);
+        stdTotalInterest += interest;
+        stdBalance -= principal;
+        if (m % 12 === 0 || stdBalance <= 0) {
+          stdAnnualBalances.push(Math.max(0, stdBalance));
+        }
+      }
+
+      // 2. Simulate Accelerated Schedule
+      let accBalance = P;
+      let accTotalInterest = 0;
+      let accTotalPrincipalPaid = 0;
+      let accTotalExtraPaid = 0;
+
+      const monthlyLogs = [];
+      const annualLogs = [];
+      const accAnnualBalances = [P];
+
+      let currentYearInterest = 0;
+      let currentYearPrincipal = 0;
+      let currentYearExtra = 0;
+      let yearStartBalance = P;
+
+      let payoffMonth = totalMonths;
+
+      for (let m = 1; m <= totalMonths; m++) {
+        if (accBalance <= 0) {
+          if (payoffMonth === totalMonths) payoffMonth = m - 1;
+          break;
+        }
+
+        const startBal = accBalance;
+        const interest = accBalance * monthlyRate;
+        let basePrincipal = Math.min(accBalance, baseEMI - interest);
+
+        // Prepayment calculations
+        let extraThisMonth = extraMonthly;
+
+        // Annual prepayment check
+        if (m % 12 === 0 && extraAnnual > 0) {
+          extraThisMonth += extraAnnual;
+        }
+
+        // Lump sum check
+        if (m === (lumpSumYear - 1) * 12 + 1 && lumpSum > 0) {
+          extraThisMonth += lumpSum;
+        }
+
+        // Limit extra payment to remaining balance after base principal
+        let actualExtra = Math.min(Math.max(0, accBalance - basePrincipal), extraThisMonth);
+
+        let totalPrincipalThisMonth = basePrincipal + actualExtra;
+        accBalance -= totalPrincipalThisMonth;
+
+        accTotalInterest += interest;
+        accTotalPrincipalPaid += basePrincipal;
+        accTotalExtraPaid += actualExtra;
+
+        currentYearInterest += interest;
+        currentYearPrincipal += basePrincipal;
+        currentYearExtra += actualExtra;
+
+        monthlyLogs.push({
+          month: m,
+          startBalance: startBal,
+          basePayment: baseEMI,
+          extraPayment: actualExtra,
+          interestPortion: interest,
+          principalPortion: totalPrincipalThisMonth,
+          endBalance: Math.max(0, accBalance)
+        });
+
+        if (m % 12 === 0 || accBalance <= 0) {
+          const currentYearNum = Math.ceil(m / 12);
+          annualLogs.push({
+            year: currentYearNum,
+            startBalance: yearStartBalance,
+            principalPaid: currentYearPrincipal,
+            interestPaid: currentYearInterest,
+            extraPaid: currentYearExtra,
+            totalPaidYearly: currentYearPrincipal + currentYearInterest + currentYearExtra,
+            endBalance: Math.max(0, accBalance)
+          });
+
+          accAnnualBalances.push(Math.max(0, accBalance));
+
+          yearStartBalance = Math.max(0, accBalance);
+          currentYearInterest = 0;
+          currentYearPrincipal = 0;
+          currentYearExtra = 0;
+        }
+
+        if (accBalance <= 0) {
+          payoffMonth = m;
+          break;
+        }
+      }
+
+      // Pad remaining years for chart alignment
+      while (accAnnualBalances.length < stdAnnualBalances.length) {
+        accAnnualBalances.push(0);
+      }
+
+      return {
+        P,
+        annualRate,
+        years,
+        baseEMI,
+        stdTotalInterest,
+        accTotalInterest,
+        accTotalExtraPaid,
+        payoffMonth,
+        savedInterest: stdTotalInterest - accTotalInterest,
+        savedMonths: totalMonths - payoffMonth,
+        stdAnnualBalances,
+        accAnnualBalances,
+        annualLogs,
+        monthlyLogs
+      };
+    }
+
+    // Update UI Elements
+    function updateUI() {
+      // Input labels
+      principalVal.textContent = fmtCurrencyWhole(principalInput.value);
+      rateVal.textContent = parseFloat(rateInput.value).toFixed(2) + '%';
+      termVal.textContent = termInput.value + ' Years';
+
+      const data = calculateAmortization();
+      currentScheduleData = data;
+
+      // Cards
+      cardBaseEmi.textContent = fmtCurrency(data.baseEMI);
+      const totalMonthlyOutflow = data.baseEMI + (parseFloat(extraMonthlyInput.value) || 0);
+      cardTotalMonthly.textContent = fmtCurrency(totalMonthlyOutflow);
+      cardMonthlyExtraAdd.textContent = `Base + ${fmtCurrency(parseFloat(extraMonthlyInput.value) || 0)} extra`;
+
+      const pYears = Math.floor(data.payoffMonth / 12);
+      const pMonths = data.payoffMonth % 12;
+      cardPayoffTime.textContent = `${pYears} Yrs ${pMonths} Mos`;
+
+      const sYears = Math.floor(data.savedMonths / 12);
+      const sMonths = data.savedMonths % 12;
+      cardTimeSaved.textContent = `Shortened by ${sYears} Yrs ${sMonths} Mos (${data.savedMonths} months)!`;
+
+      cardTotalInterest.textContent = fmtCurrency(data.accTotalInterest);
+      cardStandardInterest.textContent = `vs. ${fmtCurrency(data.stdTotalInterest)} standard`;
+      cardInterestSavings.textContent = fmtCurrency(data.savedInterest);
+
+      takeawayText.innerHTML = `
+        Paying an extra <strong>${fmtCurrency(parseFloat(extraMonthlyInput.value) || 0)}/mo</strong> allows you to retire your ${data.years}-year 
+        <strong>${fmtCurrencyWhole(data.P)}</strong> loan in <strong>${pYears} years and ${pMonths} months</strong>, 
+        saving <strong>${fmtCurrency(data.savedInterest)}</strong> in total interest!
+      `;
+
+      // Render Chart & Tables
+      renderChart(data);
+      renderTables(data);
+    }
+
+    // Render Amortization Chart
+    function renderChart(data) {
+      const labels = Array.from({ length: data.stdAnnualBalances.length }, (_, i) => `Year ${i}`);
+
+      if (balanceChart) {
+        balanceChart.destroy();
+      }
+
+      const ctx = document.getElementById('balanceChart').getContext('2d');
+      balanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Standard Schedule',
+              data: data.stdAnnualBalances,
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              borderWidth: 2,
+              pointRadius: 2,
+              fill: true,
+              tension: 0.2
+            },
+            {
+              label: 'Accelerated Schedule',
+              data: data.accAnnualBalances,
+              borderColor: '#22c55e',
+              backgroundColor: 'rgba(34, 197, 94, 0.15)',
+              borderWidth: 2.5,
+              pointRadius: 2,
+              fill: true,
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ${fmtCurrency(context.raw)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(51, 65, 85, 0.4)' },
+              ticks: { color: '#94a3b8', font: { size: 10 } }
+            },
+            y: {
+              grid: { color: 'rgba(51, 65, 85, 0.4)' },
+              ticks: {
+                color: '#94a3b8',
+                font: { size: 10 },
+                callback: function(value) {
+                  return '$' + (value / 1000).toFixed(0) + 'k';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Render Tables
+    function renderTables(data) {
+      // Render Annual Table
+      annualTableBody.innerHTML = data.annualLogs.map(row => `
+        <tr class="hover:bg-slate-800/40 transition-colors">
+          <td class="py-2.5 px-4 text-slate-200 font-semibold">Year ${row.year}</td>
+          <td class="py-2.5 px-4 text-slate-300">${fmtCurrency(row.startBalance)}</td>
+          <td class="py-2.5 px-4 text-slate-300">${fmtCurrency(row.principalPaid)}</td>
+          <td class="py-2.5 px-4 text-amber-400 font-medium">${fmtCurrency(row.interestPaid)}</td>
+          <td class="py-2.5 px-4 text-emerald-400">${fmtCurrency(row.extraPaid)}</td>
+          <td class="py-2.5 px-4 text-slate-200">${fmtCurrency(row.totalPaidYearly)}</td>
+          <td class="py-2.5 px-4 text-slate-100 font-semibold">${fmtCurrency(row.endBalance)}</td>
+        </tr>
+      `).join('');
+
+      // Render Monthly Table
+      monthlyTableBody.innerHTML = data.monthlyLogs.map(row => `
+        <tr class="hover:bg-slate-800/40 transition-colors">
+          <td class="py-2.5 px-4 text-slate-300 font-medium">Month ${row.month}</td>
+          <td class="py-2.5 px-4 text-slate-400">${fmtCurrency(row.startBalance)}</td>
+          <td class="py-2.5 px-4 text-slate-300">${fmtCurrency(row.basePayment)}</td>
+          <td class="py-2.5 px-4 text-emerald-400 font-medium">${fmtCurrency(row.extraPayment)}</td>
+          <td class="py-2.5 px-4 text-amber-400">${fmtCurrency(row.interestPortion)}</td>
+          <td class="py-2.5 px-4 text-blue-400">${fmtCurrency(row.principalPortion)}</td>
+          <td class="py-2.5 px-4 text-slate-100 font-semibold">${fmtCurrency(row.endBalance)}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Event Listeners for Live Updates
+    [principalInput, rateInput, termInput, extraMonthlyInput, extraAnnualInput, lumpSumInput, lumpSumYearInput].forEach(elem => {
+      elem.addEventListener('input', updateUI);
+      elem.addEventListener('change', updateUI);
+    });
+
+    // Reset Defaults
+    resetDefaultsBtn.addEventListener('click', () => {
+      principalInput.value = 166000;
+      rateInput.value = 7.5;
+      termInput.value = 30;
+      extraMonthlyInput.value = 378.14;
+      extraAnnualInput.value = 0;
+      lumpSumInput.value = 0;
+      lumpSumYearInput.value = 1;
+      updateUI();
+    });
+
+    // Toggle Views
+    viewAnnualBtn.addEventListener('click', () => {
+      currentActiveView = 'annual';
+      viewAnnualBtn.className = 'px-4 py-1.5 rounded-lg text-xs font-medium transition text-white bg-slate-800 shadow';
+      viewMonthlyBtn.className = 'px-4 py-1.5 rounded-lg text-xs font-medium transition text-slate-400 hover:text-white';
+      annualTableContainer.classList.remove('hidden');
+      monthlyTableContainer.classList.add('hidden');
+    });
+
+    viewMonthlyBtn.addEventListener('click', () => {
+      currentActiveView = 'monthly';
+      viewMonthlyBtn.className = 'px-4 py-1.5 rounded-lg text-xs font-medium transition text-white bg-slate-800 shadow';
+      viewAnnualBtn.className = 'px-4 py-1.5 rounded-lg text-xs font-medium transition text-slate-400 hover:text-white';
+      annualTableContainer.classList.add('hidden');
+      monthlyTableContainer.classList.remove('hidden');
+    });
+
+    // Export Schedule to CSV
+    exportCsvBtn.addEventListener('click', () => {
+      if (!currentScheduleData || !currentScheduleData.monthlyLogs) return;
+
+      const headers = ['Month', 'Start Balance ($)', 'Base Payment ($)', 'Extra Prepayment ($)', 'Interest Paid ($)', 'Principal Paid ($)', 'End Balance ($)'];
+      const rows = currentScheduleData.monthlyLogs.map(m => [
+        m.month,
+        m.startBalance.toFixed(2),
+        m.basePayment.toFixed(2),
+        m.extraPayment.toFixed(2),
+        m.interestPortion.toFixed(2),
+        m.principalPortion.toFixed(2),
+        m.endBalance.toFixed(2)
+      ]);
+
+      const csvContent = 'data:text/csv;charset=utf-8,' 
+        + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `Loan_Amortization_Schedule_${currentScheduleData.P}_P.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    // Initialize on Load
+    window.onload = function() {
+      updateUI();
+    };
+  </script>
+</body>
+</html>
